@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2011 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.android.soundrecorder;
 
 import java.io.File;
@@ -586,6 +602,7 @@ public class SoundRecorder extends Activity
         SimpleDateFormat formatter = new SimpleDateFormat(
                 res.getString(R.string.audio_db_title_format));
         String title = formatter.format(date);
+        long sampleLengthMillis = mRecorder.sampleLength() * 1000L;
 
         // Lets label the recorded audio file as NON-MUSIC so that the file
         // won't be displayed automatically, except for in the playlist.
@@ -595,6 +612,7 @@ public class SoundRecorder extends Activity
         cv.put(MediaStore.Audio.Media.DATA, file.getAbsolutePath());
         cv.put(MediaStore.Audio.Media.DATE_ADDED, (int) (current / 1000));
         cv.put(MediaStore.Audio.Media.DATE_MODIFIED, (int) (modDate / 1000));
+        cv.put(MediaStore.Audio.Media.DURATION, sampleLengthMillis);
         cv.put(MediaStore.Audio.Media.MIME_TYPE, mRequestedType);
         cv.put(MediaStore.Audio.Media.ARTIST,
                 res.getString(R.string.audio_db_artist_name));
@@ -709,10 +727,8 @@ public class SoundRecorder extends Activity
                     mRecordButton.requestFocus();
                     
                     mStateMessage1.setVisibility(View.INVISIBLE);
-                    mStateLED.setVisibility(View.VISIBLE);
-                    mStateLED.setImageResource(R.drawable.idle_led);
-                    mStateMessage2.setVisibility(View.VISIBLE);
-                    mStateMessage2.setText(res.getString(R.string.press_record));
+                    mStateLED.setVisibility(View.INVISIBLE);
+                    mStateMessage2.setVisibility(View.INVISIBLE);
                     
                     mExitButtons.setVisibility(View.INVISIBLE);
                     mVUMeter.setVisibility(View.VISIBLE);
@@ -743,8 +759,7 @@ public class SoundRecorder extends Activity
                 if (mSampleInterrupted) {
                     mStateMessage2.setVisibility(View.VISIBLE);
                     mStateMessage2.setText(res.getString(R.string.recording_stopped));
-                    mStateLED.setImageResource(R.drawable.idle_led);
-                    mStateLED.setVisibility(View.VISIBLE);                        
+                    mStateLED.setVisibility(View.INVISIBLE);
                 }
                 
                 if (mErrorUiMessage != null) {
@@ -809,10 +824,7 @@ public class SoundRecorder extends Activity
         if (state == Recorder.PLAYING_STATE || state == Recorder.RECORDING_STATE) {
             mSampleInterrupted = false;
             mErrorUiMessage = null;
-        }
-        
-        if (state == Recorder.RECORDING_STATE) {
-            mWakeLock.acquire(); // we don't want to go to sleep while recording
+            mWakeLock.acquire(); // we don't want to go to sleep while recording or playing
         } else {
             if (mWakeLock.isHeld())
                 mWakeLock.release();
